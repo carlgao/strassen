@@ -2,13 +2,26 @@ import java.util.Random;
 
 public class Strassen 
 {
-	private int[][] a, b, cnorm, cstr;
+	private int[][] a, b, cnorm, cstr; // TODO what do the last two do? also, note to self: p_i order optimization
 
 	private int d;
 
 	public static void main (String[] args)
 	{
-
+		if (args.length != 4) {
+			System.out.println("Usage: ./strassen 0 dimension inputfile");
+			return;
+		}
+		int dim = Integer.parseInt(args[2]);
+		dim += dim & 1;
+		
+		a = new int[dim][dim];
+		b = new int[dim][dim];
+		res = new int[dim][dim];
+		strassen(a, b, res, 0, 0, 0, 0, dim);
+		for (int i = 0; i < dim; i++) {
+			System.out.println(res[i][i]);
+		}
 	}
 
 	public int[][] randMatrix(int dim, int min, int max)
@@ -66,113 +79,113 @@ public class Strassen
 		else
 		{
 			int dm = (dim+1)>>1; // account for padding
-		int diff = dim - dm;
+			int diff = dim - dm;
 
 
-		int[][] temp1 = new int[dm][dm];
-		int[][] temp2 = new int[dm][dm];
+			int[][] temp1 = new int[dm][dm];
+			int[][] temp2 = new int[dm][dm];
 
 
-		// P1
-		int[][] p1 = new int[dm][dm];		
-		// copy f-h into temp2
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P1
+			int[][] p1 = new int[dm][dm];		
+			// copy f-h into temp2
+			for (int i = 0; i < diff; i++)
 			{
-				temp2[i][j] = m2[i][j+dm] - m2[i+dm][j+dm];
+				for (int j = 0; j < diff; j++)
+				{
+					temp2[i][j] = m2[i][j+dm] - m2[i+dm][j+dm];
+				}
 			}
-		}
-		strassen(m1, temp2, p1, or1, oc1, 0, 0, dm);
+			strassen(m1, temp2, p1, or1, oc1, 0, 0, dm);
 
 
-		// P2
-		int[][] p2 = new int[dm][dm];		
-		// copy a+b into temp1
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P2
+			int[][] p2 = new int[dm][dm];		
+			// copy a+b into temp1
+			for (int i = 0; i < diff; i++)
 			{
-				temp1[i][j] = m1[i][j] + m1[i][j+dm];
+				for (int j = 0; j < diff; j++)
+				{
+					temp1[i][j] = m1[i][j] + m1[i][j+dm];
+				}
 			}
-		}
-		strassen(temp1, m2, p2, 0, 0, or2 + dm, oc2 + dm, dm);
+			strassen(temp1, m2, p2, 0, 0, or2 + dm, oc2 + dm, dm);
 
 
-		// P3
-		int[][] p3 = new int[dm][dm];		
-		// copy c+d into temp1
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P3
+			int[][] p3 = new int[dm][dm];		
+			// copy c+d into temp1
+			for (int i = 0; i < diff; i++)
 			{
-				temp1[i][j] = m1[i+dm][j] + m1[i+dm][j+dm];
+				for (int j = 0; j < diff; j++)
+				{
+					temp1[i][j] = m1[i+dm][j] + m1[i+dm][j+dm];
+				}
 			}
-		}
-		strassen(temp1, m2, p3, 0, 0, or2, oc2, dm);
+			strassen(temp1, m2, p3, 0, 0, or2, oc2, dm);
 
-		// P4
-		int[][] p4 = new int[dm][dm];		
-		// copy g-e into temp2
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P4
+			int[][] p4 = new int[dm][dm];		
+			// copy g-e into temp2
+			for (int i = 0; i < diff; i++)
 			{
-				temp2[i][j] = m2[i+dm][j] - m2[i][j];
+				for (int j = 0; j < diff; j++)
+				{
+					temp2[i][j] = m2[i+dm][j] - m2[i][j];
+				}
 			}
-		}
-		strassen(m1, temp2, p4, or1+dm, oc1+dm, 0, 0, dm);
+			strassen(m1, temp2, p4, or1+dm, oc1+dm, 0, 0, dm);
 
-		// P5
-		int[][] p5 = new int[dm][dm];
-		// copy a+d into temp1, e+h into temp2
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P5
+			int[][] p5 = new int[dm][dm];
+			// copy a+d into temp1, e+h into temp2
+			for (int i = 0; i < diff; i++)
 			{
-				temp1[i][j] = m1[i][j] + m1[i+dm][j+dm];
-				temp2[i][j] = m2[i][j] + m2[i+dm][j+dm];
-			}
-		}		
-		strassen(temp1, temp2, p5, 0, 0, 0, 0, dm);
+				for (int j = 0; j < diff; j++)
+				{
+					temp1[i][j] = m1[i][j] + m1[i+dm][j+dm];
+					temp2[i][j] = m2[i][j] + m2[i+dm][j+dm];
+				}
+			}		
+			strassen(temp1, temp2, p5, 0, 0, 0, 0, dm);
 
-		// P6
-		int[][] p6 = new int[dm][dm];
-		// copy b-d into temp1, g+h into temp2
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P6
+			int[][] p6 = new int[dm][dm];
+			// copy b-d into temp1, g+h into temp2
+			for (int i = 0; i < diff; i++)
 			{
-				temp1[i][j] = m1[i][j+dm] - m1[i+dm][j+dm];
-				temp2[i][j] = m2[i+dm][j] + m2[i+dm][j+dm];
-			}
-		}		
-		strassen(temp1, temp2, p6, 0, 0, 0, 0, dm);
+				for (int j = 0; j < diff; j++)
+				{
+					temp1[i][j] = m1[i][j+dm] - m1[i+dm][j+dm];
+					temp2[i][j] = m2[i+dm][j] + m2[i+dm][j+dm];
+				}
+			}		
+			strassen(temp1, temp2, p6, 0, 0, 0, 0, dm);
 
-		// P7
-		int[][] p7 = new int[dm][dm];
-		// copy a-c into temp1, e+f into temp2
-		for (int i = 0; i < diff; i++)
-		{
-			for (int j = 0; j < diff; j++)
+			// P7
+			int[][] p7 = new int[dm][dm];
+			// copy a-c into temp1, e+f into temp2
+			for (int i = 0; i < diff; i++)
 			{
-				temp1[i][j] = m1[i][j] - m1[i+dm][j];
-				temp2[i][j] = m2[i][j] + m2[i][j+dm];
-			}
-		}		
-		strassen(temp1, temp2, p7, 0, 0, 0, 0, dm);
+				for (int j = 0; j < diff; j++)
+				{
+					temp1[i][j] = m1[i][j] - m1[i+dm][j];
+					temp2[i][j] = m2[i][j] + m2[i][j+dm];
+				}
+			}		
+			strassen(temp1, temp2, p7, 0, 0, 0, 0, dm);
 
-		// calculate result matrix
-		for (int i = 0; i < dm; i++)
-		{
-			for (int j = 0; j < dm; j++)
+			// calculate result matrix
+			for (int i = 0; i < dm; i++)
 			{
-				res[i][j] = p5[i][j] + p4[i][j] - p2[i][j] + p6[i][j];
-				res[i][j+dm] = p1[i][j] + p2[i][j];
-				res[i+dm][j] = p3[i][j] + p4[i][j];
-				res[i+dm][j+dm] = p5[i][j] + p1[i][j] - p3[i][j] - p7[i][j];
+				for (int j = 0; j < dm; j++)
+				{
+					res[i][j] = p5[i][j] + p4[i][j] - p2[i][j] + p6[i][j];
+					res[i][j+dm] = p1[i][j] + p2[i][j];
+					res[i+dm][j] = p3[i][j] + p4[i][j];
+					res[i+dm][j+dm] = p5[i][j] + p1[i][j] - p3[i][j] - p7[i][j];
+				}
 			}
-		}
 		}
 	}
 }
