@@ -1,30 +1,38 @@
 import java.util.Random;
+import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
 
-public class Strassen 
+public class strassen 
 {
-	private int[][] a, b, cnorm, cstr; // TODO what do the last two do? also, note to self: p_i order optimization
+	public static final int THRESHOLD = 8;
+	
+	private static int[][] a, b, cnorm, cstr; // TODO what do the last two do? also, note to self: p_i order optimization
 
-	private int d;
+	private static int d;
 
 	public static void main (String[] args)
 	{
-		if (args.length != 4) {
+		System.out.println(args.length);
+		if (args.length != 3) {
 			System.out.println("Usage: ./strassen 0 dimension inputfile");
 			return;
 		}
-		int dim = Integer.parseInt(args[2]);
+		int dim = Integer.parseInt(args[1]);
 		dim += dim & 1;
 		
-		a = new int[dim][dim];
-		b = new int[dim][dim];
-		res = new int[dim][dim];
+		a = randMatrix(dim, -2, 2);
+		b = randMatrix(dim, -2, 2);
+		int[][] res = new int[dim][dim];
 		strassen(a, b, res, 0, 0, 0, 0, dim);
 		for (int i = 0; i < dim; i++) {
-			System.out.println(res[i][i]);
+			for (int j = 0; j < dim; j++) {
+				System.out.println(res[i][j]);
+			}
 		}
 	}
 
-	public int[][] randMatrix(int dim, int min, int max)
+	public static int[][] randMatrix(int dim, int min, int max)
 	{
 		Random gen = new Random();
 		
@@ -36,9 +44,10 @@ public class Strassen
 				mat[i][j] = gen.nextInt(max-min+1)+min;
 			}
 		}
+		return mat;
 	}
 	
-	public void getArrays(String filename)
+	public static void getArrays(String filename)
 	{
 		Scanner sc = null;
 		try {
@@ -65,7 +74,7 @@ public class Strassen
 	{
 		for (int k = 0; k < dim; k++)
 			for (int i = 0; i < dim; i++)
-				for (j = 0; j < dim; j++)
+				for (int j = 0; j < dim; j++)
 					res[i][j] = res[i][j] + (m1[i][k] * m2[k][j]);		
 	}
 
