@@ -13,7 +13,6 @@ public class strassen
 
 	public static void main (String[] args)
 	{
-		System.out.println(args.length);
 		if (args.length != 3) {
 			System.out.println("Usage: ./strassen 0 dimension inputfile");
 			return;
