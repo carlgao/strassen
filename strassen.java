@@ -27,8 +27,9 @@ public class strassen
 		strassen(a, b, res, 0, 0, 0, 0, dim);
 		for (int i = 0; i < dim; i++) {
 			for (int j = 0; j < dim; j++) {
-				System.out.println(res[i][j]);
+				System.out.print(res[i][j] + " ");
 			}
+			System.out.println();
 		}
 	}
 
