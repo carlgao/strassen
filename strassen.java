@@ -1,3 +1,4 @@
+import java.util.Random;
 
 public class Strassen 
 {
@@ -10,6 +11,20 @@ public class Strassen
 
 	}
 
+	public int[][] randMatrix(int dim, int min, int max)
+	{
+		Random gen = new Random();
+		
+		int[][] mat = new int[dim][dim];
+		for (int i = 0; i < dim; i++)
+		{
+			for (int j = 0; j < dim; j++)
+			{
+				mat[i][j] = gen.nextInt(max-min+1)+min;
+			}
+		}
+	}
+	
 	public void getArrays(String filename)
 	{
 		Scanner sc = null;
@@ -41,17 +56,18 @@ public class Strassen
 					res[i][j] = res[i][j] + (m1[i][k] * m2[k][j]);		
 	}
 
+
 	// nub memory usage dynamic padding style yay
 	// RIGHT NOW THIS DOES NOT WORK CRY
 	public static void strassen(int[][] m1, int[][] m2, int[][] res, int or1, int oc1, int or2, int oc2, int dim)
 	{
 		if (dim < THRESHOLD)
 			mult(m1, m2, res, dim);
-
 		else
 		{
 			int dm = (dim+1)>>1; // account for padding
 		int diff = dim - dm;
+
 
 		int[][] temp1 = new int[dm][dm];
 		int[][] temp2 = new int[dm][dm];
@@ -132,7 +148,7 @@ public class Strassen
 			}
 		}		
 		strassen(temp1, temp2, p6, 0, 0, 0, 0, dm);
-		
+
 		// P7
 		int[][] p7 = new int[dm][dm];
 		// copy a-c into temp1, e+f into temp2
@@ -145,7 +161,7 @@ public class Strassen
 			}
 		}		
 		strassen(temp1, temp2, p7, 0, 0, 0, 0, dm);
-		
+
 		// calculate result matrix
 		for (int i = 0; i < dm; i++)
 		{
@@ -156,6 +172,7 @@ public class Strassen
 				res[i+dm][j] = p3[i][j] + p4[i][j];
 				res[i+dm][j+dm] = p5[i][j] + p1[i][j] - p3[i][j] - p7[i][j];
 			}
+		}
 		}
 	}
 }
