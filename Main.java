@@ -1,96 +1,45 @@
 import java.util.Random;
-import java.util.Scanner;
-import java.io.File;
-import java.io.FileNotFoundException;
 
-public class strassen 
+
+public class Main 
 {
-	public static final int THRESHOLD = 8;
-	
-	private static int[][] a, b, cnorm, cstr; // TODO what do the last two do? also, note to self: p_i order optimization
-
-	private static int d;
+	public static final int THRESHOLD = 2;
+	public static final int DIMENSION = 16;
 
 	public static void main (String[] args)
 	{
-		if (args.length != 3)
-		{
-			System.out.println("Usage: ./strassen 0 dimension inputfile");
-			return;
-		}
-		d = Integer.parseInt(args[1]);
-		int d2 = d + (d & 1);
-		
-		int[][] a = new int[d2][d2];
-		int[][] b = new int[d2][d2];
-		getArrays(args[2], a, b);
-		int[][] res = new int[d2][d2];
-		strassen(a, b, res, 0, 0, 0, 0, d2);
-		for (int i = 0; i < d; i++)
-		{
-			for (int j = 0; j < d; j++)
-			{
-				System.out.print(res[i][j] + " ");
-			}
-			System.out.println();
-		}
-	}
+		int[][] a = randMatrix(DIMENSION, 0, 1);//{{1,0,0},{1,1,1},{0,0,1}};//
+		int[][] b = randMatrix(DIMENSION, 0, 1);//{{0,0,1},{1,0,0},{1,1,1}};//randMatrix(2, 0, 1);
 
-	public static int[][] randMatrix(int dim, int min, int max)
-	{
-		Random gen = new Random();
+		int[][] c = new int[DIMENSION][DIMENSION];
+		int[][] d = new int[DIMENSION][DIMENSION];
+
+		mult2(a, b, c, DIMENSION);
 		
-		int[][] mat = new int[dim][dim];
-		for (int i = 0; i < dim; i++)
-		{
-			for (int j = 0; j < dim; j++)
-			{
-				mat[i][j] = gen.nextInt(max-min+1)+min;
-			}
-		}
-		return mat;
+		printMatrix(a);
+		System.out.println("");
+		printMatrix(b);
+		System.out.println("");
+		printMatrix(c);
+		System.out.println("");
+
+		strassen(a, b, d, 0, 0, 0, 0, DIMENSION);
+		System.out.println("Strassen's: ");
+		printMatrix(d);
+		
+		System.out.println("Actual: ");
+		printMatrix(c);
+
 	}
 	
-	public static void getArrays(String filename, int[][] a, int[][] b) // why can't I access a and b without passing them in??
-	{
-		Scanner sc = null;
-		try {
-			sc = new Scanner(new File(filename));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return;
-		}
-
-		// populate a
-		for (int i = 0; i < d; i++)
-			for (int j = 0; j < d; j++) {
-				a[i][j] = sc.nextInt();
-			}
-
-		// populate b
-		for (int i = 0; i < d; i++)
-			for (int j = 0; j < d; j++) {
-				b[i][j] = sc.nextInt();
-			}
-
-		sc.close();
-	}
-
-	// cache-efficient standard multiplication algorithm
-	public static void mult(int[][] m1, int[][] m2, int[][] res, int or1, int oc1, int or2, int oc2, int dim)
-	{
-		System.out.println("dim: "+dim);
-		System.out.println(or1+" "+oc1+" "+or2+" "+oc2+" ");
-		for (int k = 0; k < dim; k++)
-			for (int i = 0; i < dim; i++)
-				for (int j = 0; j < dim; j++) {
-					res[i][j] = res[i][j] + (m1[i+or1][k+oc1] * m2[k+or2][j+oc2]);		
-				}
-	}
-
-
-	// nub memory usage dynamic padding style yay
-	// RIGHT NOW THIS DOES NOT WORK CRY
+	/*
+	 * m1 = A B
+	 *      C D
+	 *      
+	 * m2 = E F
+	 *      G H 
+	 * 
+	 */
 	public static void strassen(int[][] m1, int[][] m2, int[][] res, int or1, int oc1, int or2, int oc2, int dim)
 	{
 		if (dim < THRESHOLD)
@@ -223,6 +172,52 @@ public class strassen
 			}
 			System.out.println("");
 		}
+	}
+	
+	public static int[][] randMatrix(int dim, int min, int max)
+	{
+		Random gen = new Random();
+		
+		int[][] mat = new int[dim][dim];
+		for (int i = 0; i < dim; i++)
+		{
+			for (int j = 0; j < dim; j++)
+			{
+				mat[i][j] = gen.nextInt(max-min+1)+min;
+			}
+		}
+		return mat;
+	}
+
+	public static void printMatrix(int[][] m)
+	{
+		for (int i = 0; i < m.length; i++)
+		{
+			for (int j = 0; j < m[0].length; j++)
+				System.out.print(m[i][j] + "  ");
+			System.out.println("");
+		}
+	}
+	
+	// cache-efficient standard multiplication algorithm
+	public static void mult2(int[][] m1, int[][] m2, int[][] res, int dim)
+	{
+		for (int k = 0; k < dim; k++)
+			for (int i = 0; i < dim; i++)
+				for (int j = 0; j < dim; j++) {
+					res[i][j] = res[i][j] + (m1[i][k] * m2[k][j]);		
+				}
+	}
+	
+	public static void mult(int[][] m1, int[][] m2, int[][] res, int or1, int oc1, int or2, int oc2, int dim)
+	{
+		System.out.println("dim: "+dim);
+		System.out.println(or1+" "+oc1+" "+or2+" "+oc2+" ");
+		for (int k = 0; k < dim; k++)
+			for (int i = 0; i < dim; i++)
+				for (int j = 0; j < dim; j++) {
+					res[i][j] = res[i][j] + (m1[i+or1][k+oc1] * m2[k+or2][j+oc2]);		
+				}
 	}
 }
 
