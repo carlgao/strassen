@@ -7,7 +7,7 @@ public class Main
     
 	public static void main (String[] args)
 	{
-		int DIMENSION = Integer.parseInt(args[0]);
+		int DIMENSION = 140;//Integer.parseInt(args[0]);
 		int d2 = DIMENSION + (DIMENSION & 1);
         
 		int[][] a = randMatrix(d2, 0, 1);//{{1,0,0},{1,1,1},{0,0,1}};//
@@ -34,7 +34,7 @@ public class Main
 		}
         
 		long t1 = System.nanoTime();
-		mult2(a, b, c, DIMENSION);
+		mult(a, b, c, DIMENSION);
 		long t2 = System.nanoTime();
 		strassen(a, b, d, DIMENSION);
 		long t3 = System.nanoTime();
@@ -83,9 +83,8 @@ public class Main
 	public static void strassen(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
 		if (dim < THRESHOLD)
-		{
-			mult(m1, m2, res, dim);
-		}
+			strasMult(m1, m2, res, dim);
+		
 		else
 		{
 			// account for padding
@@ -270,8 +269,11 @@ public class Main
 		}
 	}
     
-	// cache-efficient standard multiplication algorithm
-	public static void mult2(int[][] m1, int[][] m2, int[][] res, int dim)
+	/*
+	 * Cache-efficient standard multiplication algorithm. Assumes result
+	 * matrix res is initialized to all 0's.
+	 */
+	public static void mult(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
 		for (int k = 0; k < dim; k++)
 			for (int i = 0; i < dim; i++)
@@ -280,13 +282,15 @@ public class Main
 				}
 	}
     
-	public static void mult(int[][] m1, int[][] m2, int[][] res, int dim)
+	/*
+	 * Standard multiplication algorithm, used by Strassen when n < 0.
+	 * Does not require res to be all 0.
+	 */
+	public static void strasMult(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
-		//System.out.println("dim: "+dim);
 		for (int i = 0; i < dim; i++)
-			for (int j = 0; j < dim; j++) {
+			for (int j = 0; j < dim; j++) 
 				res[i][j] = (m1[i][0] * m2[0][j]);		
-			}
         
 		for (int k = 1; k < dim; k++)
 			for (int i = 0; i < dim; i++)
