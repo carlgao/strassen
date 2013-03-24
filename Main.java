@@ -298,5 +298,14 @@ public class Main
 					res[i][j] += (m1[i][k] * m2[k][j]);		
 				}
 	}
+    
+    /*
+	 * Prints the diagonal of a square matrix m, one entry per line
+	 */
+	public static void printDiag(int[][] m)
+	{
+		for (int i = 0; i < m.length; i++)
+			System.out.println(m[i][i]);
+	}
 }
 
