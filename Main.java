@@ -1,20 +1,21 @@
 import java.util.Random;
 
 
-public class Main 
+public class Main
 {
-	public static final int THRESHOLD = 2;
-
+	public static final int THRESHOLD = 55;
+    
 	public static void main (String[] args)
 	{
 		int DIMENSION = Integer.parseInt(args[0]);
 		int d2 = DIMENSION + (DIMENSION & 1);
-		
+        
 		int[][] a = randMatrix(d2, 0, 1);//{{1,0,0},{1,1,1},{0,0,1}};//
-		int[][] b = randMatrix(d2, 0, 1);//{{0,0,1},{1,0,0},{1,1,1}};//randMatrix(2, 0, 1);
-
+		int[][] b = randMatrix(d2, 1, 1);//{{0,0,1},{1,0,0},{1,1,1}};//randMatrix(2, 0, 1);
+        
 		int[][] c = new int[DIMENSION][DIMENSION];
 		int[][] d = new int[DIMENSION][DIMENSION];
+		
 		if (1 == (DIMENSION & 1)) {
 			int i = DIMENSION;
 			for (int j = 0; j < d2; j++)
@@ -31,26 +32,32 @@ public class Main
 			c = new int[d2][d2];
 			d = new int[d2][d2];
 		}
-			
-		
-
-		
+        
+		long t1 = System.nanoTime();
 		mult2(a, b, c, DIMENSION);
-		
-		printMatrix(a);
-		System.out.println("");
-		printMatrix(b);
-		System.out.println("");
-		printMatrix(c);
-		System.out.println("");
-
+		long t2 = System.nanoTime();
 		strassen(a, b, d, DIMENSION);
-		System.out.println("Strassen's: ");
-		printMatrix(d);
+		long t3 = System.nanoTime();
+        
+		if (t2-t1 > t3-t2)
+			System.out.println("Strassen's is faster.");
+		else
+			System.out.println("Normal multiplication is faster.");
+		System.out.println("Normal: "+(t2-t1)+"\t Strassen's: "+(t3-t2));
 		
-		System.out.println("Actual: ");
-		printMatrix(c);
-
+		/*
+         System.out.println("A:");
+         printMatrix(a);
+         
+         System.out.println("\nB:");
+         printMatrix(b);
+         
+         System.out.println("\nStrassen's: ");
+         printMatrix(d);
+         
+         System.out.println("\nActual: ");
+         printMatrix(c);*/
+        
 		for (int i = 0; i < DIMENSION; i++)
 		{
 			for (int j = 0; j < DIMENSION; j++)
@@ -64,68 +71,79 @@ public class Main
 		}
 		System.out.println("Same");
 	}
-	
+    
 	/*
 	 * m1 = A B
 	 *      C D
-	 *      
+	 *
 	 * m2 = E F
-	 *      G H 
-	 * 
+	 *      G H
 	 */
+	
 	public static void strassen(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
 		if (dim < THRESHOLD)
+		{
 			mult(m1, m2, res, dim);
+		}
 		else
 		{
-			System.out.println("lengths: " + m1.length + " " + m2.length);
-			int dm = (dim+1)>>1; // account for padding
-			int diff = dim - dm; //TODO: use dm everywhere instead of diff?
-
+			// account for padding
+			int dm = (dim+1) >> 1;
 			int dm2 = dm + (dm & 1);
-
+            
+			// temporary storage for factors of P matrices
 			int[][] temp1 = new int[dm2][dm2];
 			int[][] temp2 = new int[dm2][dm2];
-
-
+            
+			// temporary storage for P matrices
+			int[][] p = new int[dm2][dm2];
+            
 			// P1 = A(F-H)
-			int[][] p1 = new int[dm2][dm2];		
-			// copy a into temp1
-			// copy f-h into temp2
+			// copy A into temp1 & F-H into temp2
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
 				{
-					System.out.println("P1: "+"m2["+(i)+","+(j+dm)+"]="+m2[i][j+dm]+"  m2["+(i+dm)+","+(j+dm)+"]="+m2[i+dm][j+dm]);
+					//System.out.println("P1: "+"m2["+(i)+","+(j+dm)+"]="+m2[i][j+dm]+"  m2["+(i+dm)+","+(j+dm)+"]="+m2[i+dm][j+dm]);
 					temp1[i][j] = m1[i][j];
 					temp2[i][j] = m2[i][j+dm] - m2[i+dm][j+dm];
 				}
 			}
-			strassen(temp1, temp2, p1, dm);
-			printMatrix(p1);
-
-			// P2 = (A+B)H
-			int[][] p2 = new int[dm2][dm2];		
-			// copy a+b into temp1
-			// copy h into temp2
+			strassen(temp1, temp2, p, dm);
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
 				{
-					System.out.println("P2: "+"m1["+(i)+","+(j)+"]="+m1[i][j]+"  m1["+(i)+","+(j+dm)+"]="+m1[i][j+dm]);
+					res[i][j+dm] = p[i][j];
+					res[i+dm][j+dm] = p[i][j];
+				}
+			}
+            
+            
+			// P2 = (A+B)H
+			// copy a+b into temp1 and h into temp2
+			
+			for (int i = 0; i < dm; i++)
+			{
+				for (int j = 0; j < dm; j++)
+				{
 					temp1[i][j] = m1[i][j] + m1[i][j+dm];
 					temp2[i][j] = m2[i+dm][j+dm];
 				}
 			}
-			strassen(temp1, temp2, p2, dm);
-			printMatrix(p2);
-
-
+			strassen(temp1, temp2, p, dm);
+			for (int i = 0; i < dm; i++)
+			{
+				for (int j = 0; j < dm; j++)
+				{
+					res[i][j] = -p[i][j];
+					res[i][j+dm] += p[i][j];
+				}
+			}
+			
 			// P3 = (C+D)E
-			int[][] p3 = new int[dm2][dm2];		
-			// copy c+d into temp1
-			// copy e into temp2
+			// Copy C+D into temp1 & E into temp2
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
@@ -134,13 +152,19 @@ public class Main
 					temp2[i][j] = m2[i][j];
 				}
 			}
-			strassen(temp1, temp2, p3, dm);
-			printMatrix(p3);
-
+			strassen(temp1, temp2, p, dm);
+			
+			for (int i = 0; i < dm; i++)
+			{
+				for (int j = 0; j < dm; j++)
+				{
+					res[i+dm][j] = p[i][j];
+					res[i+dm][j+dm] -= p[i][j];
+				}
+			}
+			
 			// P4 = D(G-E)
-			int[][] p4 = new int[dm2][dm2];		
-			// copy d into temp1
-			// copy g-e into temp2
+			// Copy D into temp1 & G-E into temp2
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
@@ -149,12 +173,19 @@ public class Main
 					temp2[i][j] = m2[i+dm][j] - m2[i][j];
 				}
 			}
-			strassen(temp1, temp2, p4, dm);
-			printMatrix(p4);
-
+			strassen(temp1, temp2, p, dm);
+            
+			for (int i = 0; i < dm; i++)
+			{
+				for (int j = 0; j < dm; j++)
+				{
+					res[i][j] -= p[i][j];
+					res[i+dm][j] += p[i][j];
+				}
+			}
+            
 			// P5 = (A+D)(E+H)
-			int[][] p5 = new int[dm2][dm2];
-			// copy a+d into temp1, e+h into temp2
+			// copy A+D into temp1 & E+H into temp2
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
@@ -162,13 +193,19 @@ public class Main
 					temp1[i][j] = m1[i][j] + m1[i+dm][j+dm];
 					temp2[i][j] = m2[i][j] + m2[i+dm][j+dm];
 				}
-			}		
-			strassen(temp1, temp2, p5, dm);
-			printMatrix(p5);
-
+			}
+			strassen(temp1, temp2, p, dm);
+			for (int i = 0; i < dm; i++)
+			{
+				for (int j = 0; j < dm; j++)
+				{
+					res[i][j] += p[i][j];
+					res[i+dm][j+dm] += p[i][j];
+				}
+			}
+            
 			// P6 = (B-D)(G+H)
-			int[][] p6 = new int[dm2][dm2];
-			// copy b-d into temp1, g+h into temp2
+			// Copy B-D into temp1 & G+H into temp2
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
@@ -176,13 +213,19 @@ public class Main
 					temp1[i][j] = m1[i][j+dm] - m1[i+dm][j+dm];
 					temp2[i][j] = m2[i+dm][j] + m2[i+dm][j+dm];
 				}
-			}		
-			strassen(temp1, temp2, p6, dm);
-			printMatrix(p6);
-
-			// P7
-			int[][] p7 = new int[dm2][dm2];
-			// copy a-c into temp1, e+f into temp2
+			}
+			strassen(temp1, temp2, p, dm);
+            
+			for (int i = 0; i < dm; i++)
+			{
+				for (int j = 0; j < dm; j++)
+				{
+					res[i][j] += p[i][j];
+				}
+			}
+            
+			// P7 = (A-C)(E+F)
+			// Copy A-C into temp1 & E+F into temp2
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
@@ -190,37 +233,22 @@ public class Main
 					temp1[i][j] = m1[i][j] - m1[i+dm][j];
 					temp2[i][j] = m2[i][j] + m2[i][j+dm];
 				}
-			}		
-			strassen(temp1, temp2, p7, dm);
-			printMatrix(p7);
-
-			// calculate result matrix
-			System.out.println("calculating result matrix");
+			}
+			strassen(temp1, temp2, p, dm);
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
 				{
-					System.out.println("1: "+(p5[i][j] + p4[i][j] - p2[i][j] +p6[i][j]));
-					res[i][j] = p5[i][j] + p4[i][j] - p2[i][j] +p6[i][j];
-					
-					System.out.println("2: "+(p1[i][j] + p2[i][j]));
-					res[i][j+dm] = p1[i][j] + p2[i][j];
-					
-					System.out.println("3: "+(p3[i][j] + p4[i][j]));
-					res[i+dm][j] = p3[i][j] + p4[i][j];
-					
-					System.out.println("4: "+(p5[i][j] + p1[i][j] - p3[i][j] -p7[i][j]));
-					res[i+dm][j+dm] = p5[i][j] + p1[i][j] - p3[i][j] - p7[i][j];
+					res[i+dm][j+dm] -= p[i][j];
 				}
 			}
-			System.out.println("");
 		}
 	}
-	
+    
 	public static int[][] randMatrix(int dim, int min, int max)
 	{
 		Random gen = new Random();
-		
+        
 		int[][] mat = new int[dim][dim];
 		for (int i = 0; i < dim; i++)
 		{
@@ -231,7 +259,7 @@ public class Main
 		}
 		return mat;
 	}
-
+    
 	public static void printMatrix(int[][] m)
 	{
 		for (int i = 0; i < m.length; i++)
@@ -241,24 +269,29 @@ public class Main
 			System.out.println("");
 		}
 	}
-	
+    
 	// cache-efficient standard multiplication algorithm
 	public static void mult2(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
 		for (int k = 0; k < dim; k++)
 			for (int i = 0; i < dim; i++)
 				for (int j = 0; j < dim; j++) {
-					res[i][j] = res[i][j] + (m1[i][k] * m2[k][j]);		
+					res[i][j] = res[i][j] + (m1[i][k] * m2[k][j]);
 				}
 	}
-	
+    
 	public static void mult(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
-		System.out.println("dim: "+dim);
-		for (int k = 0; k < dim; k++)
+		//System.out.println("dim: "+dim);
+		for (int i = 0; i < dim; i++)
+			for (int j = 0; j < dim; j++) {
+				res[i][j] = (m1[i][0] * m2[0][j]);		
+			}
+        
+		for (int k = 1; k < dim; k++)
 			for (int i = 0; i < dim; i++)
 				for (int j = 0; j < dim; j++) {
-					res[i][j] = res[i][j] + (m1[i][k] * m2[k][j]);		
+					res[i][j] += (m1[i][k] * m2[k][j]);		
 				}
 	}
 }
