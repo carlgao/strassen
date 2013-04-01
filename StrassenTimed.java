@@ -1,19 +1,38 @@
 import java.util.Random;
-
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class StrassenTimed
 {
 	public static final int THRESHOLD = 50;
 	public static final int TRIALS = 100;
+	public static Map<Integer, int[][]> ps = new HashMap<Integer, int[][]>();
+	public static Map<Integer, int[][]> temp1s = new HashMap<Integer, int[][]>();
+	public static Map<Integer, int[][]> temp2s = new HashMap<Integer, int[][]>();
 	
 	public static void main (String[] args)
 	{
 		boolean STRASSEN = true;
-		int DIMENSION = 100; //Integer.parseInt(args[0]);
-		
+		int DIMENSION = 101; //Integer.parseInt(args[0]);
 		
 		int d2 = DIMENSION + (DIMENSION & 1);
-
+		
+		int dim = d2;
+		while (dim >= THRESHOLD) {
+			System.out.println(dim);
+			dim = dim + (dim & 1);
+			ps.put(dim, new int[dim][dim]);
+			dim = dim >> 1;
+		}
+		
+		Iterator iterator = ps.keySet().iterator();
+ 
+		while (iterator.hasNext()) {
+			Integer key = (Integer) iterator.next();
+			System.out.print(key+" ");
+		}
+		
 		int[][] a = randMatrix(d2, 0, 1);//{{1,0,0},{1,1,1},{0,0,1}};//
 		int[][] b = randMatrix(d2, 1, 1);//{{0,0,1},{1,0,0},{1,1,1}};//randMatrix(2, 0, 1);
 
@@ -33,10 +52,20 @@ public class StrassenTimed
 				b[i][j] = 0;
 			}
 		}
+		
+		for (int i = 0; i < d2; i++)
+		{
+			for (int j = 0; j < d2; j++)
+			{
+				System.out.print(a[i][j] + " ");
+			}
+			System.out.println();
+		}
 
 		long t = 0;
 		long ttemp = -1;
 		
+		// discard first 10 results because the program seems to be slow when "warming up" initially
 		for (int i = 0; i < 10; i++)
 		{
 			int[][] c = new int[d2][d2];
