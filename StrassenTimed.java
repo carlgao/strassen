@@ -14,22 +14,24 @@ public class StrassenTimed
 	public static void main (String[] args)
 	{
 		boolean STRASSEN = true;
-		int DIMENSION = 101; //Integer.parseInt(args[0]);
+		int DIMENSION = 255; //Integer.parseInt(args[0]);
 		
 		int d2 = DIMENSION + (DIMENSION & 1);
 		
 		int dim = d2;
 		while (dim >= THRESHOLD) {
-			System.out.println(dim);
 			dim = dim + (dim & 1);
 			ps.put(dim, new int[dim][dim]);
 			temp1s.put(dim, new int[dim][dim]);
 			temp2s.put(dim, new int[dim][dim]);
 			dim = dim >> 1;
 		}
+		dim = dim + (dim & 1);
+		ps.put(dim, new int[dim][dim]);
+		temp1s.put(dim, new int[dim][dim]);
+		temp2s.put(dim, new int[dim][dim]);
 		
 		Iterator iterator = ps.keySet().iterator();
- 
 		while (iterator.hasNext()) {
 			Integer key = (Integer) iterator.next();
 			System.out.print(key+" ");
@@ -166,11 +168,11 @@ public class StrassenTimed
 			int dm2 = dm + (dm & 1);
 
 			// temporary storage for factors of P matrices
-			int[][] temp1 = new int[dm2][dm2];
-			int[][] temp2 = new int[dm2][dm2];
+			int[][] temp1 = temp1s.get(dm2);
+			int[][] temp2 = temp2s.get(dm2);
 
 			// temporary storage for P matrices
-			int[][] p = new int[dm2][dm2];	
+			int[][] p = ps.get(dm2);	
 
 			// P1 = A(F-H)
 			// copy A into temp1 & F-H into temp2
