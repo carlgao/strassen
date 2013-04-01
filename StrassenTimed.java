@@ -23,6 +23,8 @@ public class StrassenTimed
 			System.out.println(dim);
 			dim = dim + (dim & 1);
 			ps.put(dim, new int[dim][dim]);
+			temp1s.put(dim, new int[dim][dim]);
+			temp2s.put(dim, new int[dim][dim]);
 			dim = dim >> 1;
 		}
 		
