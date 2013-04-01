@@ -27,7 +27,7 @@ public class StrassenTimed
 				b[i][j] = 0;
 			}
 			int j = DIMENSION;
-			for (i = 1; i < d2; i++)
+			for (i = 0; i < d2; i++)
 			{
 				a[i][j] = 0;
 				b[i][j] = 0;
