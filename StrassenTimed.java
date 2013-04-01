@@ -5,42 +5,53 @@ import java.util.Iterator;
 
 public class StrassenTimed
 {
-	public static final int THRESHOLD = 50;
+	public static final int THRESHOLD = 2; // must be >= 2
 	public static final int TRIALS = 100;
 	public static Map<Integer, int[][]> ps = new HashMap<Integer, int[][]>();
 	public static Map<Integer, int[][]> temp1s = new HashMap<Integer, int[][]>();
 	public static Map<Integer, int[][]> temp2s = new HashMap<Integer, int[][]>();
 	
+	/*
+	 * Initializes temporary storage
+	 */
+	public void initialize()
+	{
+		
+	}
 	public static void main (String[] args)
 	{
 		boolean STRASSEN = true;
-		int DIMENSION = 255; //Integer.parseInt(args[0]);
+		int DIMENSION = 2; //Integer.parseInt(args[0]);
 		
 		int d2 = DIMENSION + (DIMENSION & 1);
 		
 		int dim = d2;
-		while (dim >= THRESHOLD) {
+		
+		// initialize storage for all dimensions of strassen's recursion.
+		while (dim > THRESHOLD) 
+		{
 			dim = dim + (dim & 1);
 			ps.put(dim, new int[dim][dim]);
 			temp1s.put(dim, new int[dim][dim]);
 			temp2s.put(dim, new int[dim][dim]);
-			dim = dim >> 1;
+			dim >>= 1;
 		}
-		dim = dim + (dim & 1);
+		// add base case of recursion
 		ps.put(dim, new int[dim][dim]);
 		temp1s.put(dim, new int[dim][dim]);
 		temp2s.put(dim, new int[dim][dim]);
 		
-		Iterator iterator = ps.keySet().iterator();
-		while (iterator.hasNext()) {
-			Integer key = (Integer) iterator.next();
-			System.out.print(key+" ");
-		}
-		
-		int[][] a = randMatrix(d2, 0, 1);//{{1,0,0},{1,1,1},{0,0,1}};//
-		int[][] b = randMatrix(d2, 1, 1);//{{0,0,1},{1,0,0},{1,1,1}};//randMatrix(2, 0, 1);
+		// check keys 
+		Iterator<Integer> iterator = ps.keySet().iterator();
+		System.out.print("keys: ");
+		while (iterator.hasNext())
+			System.out.print((Integer)iterator.next()+" ");
+		System.out.println("");
 
-		
+		int[][] a = randMatrix(d2, 1, 1);
+		int[][] b = randMatrix(d2, 0, 1);
+
+		// if odd, pad the matrices with 0s
 		if (1 == (DIMENSION & 1)) 
 		{
 			int i = DIMENSION;
@@ -56,16 +67,13 @@ public class StrassenTimed
 				b[i][j] = 0;
 			}
 		}
-		
-		for (int i = 0; i < d2; i++)
-		{
-			for (int j = 0; j < d2; j++)
-			{
-				System.out.print(a[i][j] + " ");
-			}
-			System.out.println();
-		}
 
+		printMatrix(a);
+		printMatrix(b);
+
+		// TIMING SCRIPT
+		/*
+		
 		long t = 0;
 		long ttemp = -1;
 		
@@ -128,12 +136,19 @@ public class StrassenTimed
 		
 		System.out.println("Dimension: "+DIMENSION);
 		System.out.println("Average computation time: "+ t + " ns");
+		*/
 		
 		int[][] c = new int[d2][d2];
 		int[][] d = new int[d2][d2];
+		
 		mult(a, b, c, DIMENSION);
 		strassen(a, b, d, DIMENSION);
 		
+		System.out.println("c");
+		printMatrix(c);
+		System.out.println("d");
+		printMatrix(d);
+
 		for (int i = 0; i < DIMENSION; i++)
 		{
 			for (int j = 0; j < DIMENSION; j++)
@@ -170,9 +185,23 @@ public class StrassenTimed
 			// temporary storage for factors of P matrices
 			int[][] temp1 = temp1s.get(dm2);
 			int[][] temp2 = temp2s.get(dm2);
-
+			
 			// temporary storage for P matrices
 			int[][] p = ps.get(dm2);	
+						
+			// need to reset padding in case temps were used already
+			if ((dm & 1) == 1)
+			{
+				for (int i = 0; i < dm; i++)
+				{
+					temp1[i][dm] = 0;
+					temp1[dm][i] = 0;
+					temp2[i][dm] = 0;
+					temp2[dm][i] = 0;
+					p[i][dm] = 0;
+					p[dm][i] = 0;
+				}
+			}
 
 			// P1 = A(F-H)
 			// copy A into temp1 & F-H into temp2
@@ -185,7 +214,9 @@ public class StrassenTimed
 					temp2[i][j] = m2[i][j+dm] - m2[i+dm][j+dm];
 				}
 			}
+			
 			strassen(temp1, temp2, p, dm);
+			
 			for (int i = 0; i < dm; i++)
 			{
 				for (int j = 0; j < dm; j++)
@@ -194,6 +225,9 @@ public class StrassenTimed
 					res[i+dm][j+dm] = p[i][j];
 				}
 			}
+			System.out.println("P1");
+			printMatrix(res);
+
 
 			// P2 = (A+B)H
 			// Copy A+B into temp1 & H into temp2
@@ -214,6 +248,9 @@ public class StrassenTimed
 					res[i][j+dm] += p[i][j];
 				}
 			}
+			System.out.println("P2");
+			printMatrix(res);
+
 			
 			// P3 = (C+D)E
 			// Copy C+D into temp1 & E into temp2
@@ -341,6 +378,7 @@ public class StrassenTimed
 				System.out.print(m[i][j] + "  ");
 			System.out.println("");
 		}
+		System.out.println("");
 	}
 
 	/*
