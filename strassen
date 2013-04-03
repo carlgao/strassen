@@ -1,0 +1,2 @@
+#!/bin/bash
+java strassen $1 $2 $3
