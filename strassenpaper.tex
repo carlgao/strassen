@@ -70,10 +70,11 @@ Hence $n_0 > 15$, and our analytic estimate is $n_0 = 16$.
 
 \section {Implementation}
 
-
+\subsection{Reusing temporary arrays}
+First of all, we worked with a single 
 
 \subsection{Dealing with odd $n$}
-[describe static padding yay]
+We used a dynamic padding approach, in which a single extra layer of 0's was added to odd matrices at any point in the recursion and even matrices were left alone. This enabled much higher space efficiency than static padding (to a power of 2) while keeping program complexity low. 
 
 \subsection{Cache efficiency}
 
