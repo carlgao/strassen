@@ -68,16 +68,26 @@ T_c(n_0) &> T_s(n_0)\\
 \end{align*}
 Hence $n_0 > 15$, and our analytic estimate is $n_0 = 16$.
 
-\section {Implementation}
+\section {Conventional multiplication implementation}
+Our implementation was cache-efficient as opposed to the naive approach traversing the result matrix once and traversing both multiplicands each time. In our code, we traversed B along columns, taking advantage of spatial locality, and held the element being examined in A constant while going through a given row, avoiding numerous lookups. We traverse the result matrix along the same lines, albeit multiple times, but this is worth it because we avoid the jumping around in matrix B that the naive method entails. 
+
+\section {Strassen's algorithm implementation}
 
 \subsection{Reusing temporary arrays}
-First of all, we worked with a single 
+In each level of recursion, we used only one P array. We were able to do this by computing $P_i$, storing it in P, immediately adding it to the relevant result matrices, then computing the next $P_i$. By updating the result as we went in this way, we avoided allocating all 7 P arrays. In addition to the P array, we used two temp arrays to hold the results of matrix addition or subtraction, also reusing them as we went. \\
+\\
+We allocated these three arrays in the beginning for each dimension we expected to compute at, storing them in a hash table with dimension as the key. This way, instead of allocating them as we went, we allocated them all at the same time and looked them up/rewrote them as necessary, which cut down on memory allocation/de-allocation time. 
 
 \subsection{Dealing with odd $n$}
 We used a dynamic padding approach, in which a single extra layer of 0's was added to odd matrices at any point in the recursion and even matrices were left alone. This enabled much higher space efficiency than static padding (to a power of 2) while keeping program complexity low. 
 
-\subsection{Cache efficiency}
+\section {Timing and Empirical Threshold}
+We recorded only the computational time of each trial of the algorithm, not the time associated with the one-time allocation of memory over multiple trials, etc. \\
+\\
+The way we determined the threshold at which we should switch to the conventional algorithm is thus: for a given $n$, set both dimension and threshold equal to $n$ such that Strassen's runs exactly once on the topmost level, and the conventional algorithm takes care of the rest. Then compare this with running the conventional algorithm on the topmost level. This way we isolate the timing of that one level, like we did in the analytical estimate earlier. 
 
+\section {Difficulties}
+Some difficulties we encountered involved repeated memory allocation and dellocation, which we solved by allocating the temp arrays and the P arrays once in the beginning and storing them. Another difficulty was that the runtime of Strassen's algorithm depended on the number of trials we ran, which we suspected had to do with the program 'warming up', and combated by discarding the first several trials. 
 
 
 
