@@ -17,7 +17,7 @@ public class TryAgain
 
 	public static void main(String[] args)
 	{
-		DIMENSION = 150; //Integer.parseInt(args[1]);
+		DIMENSION = 120; //Integer.parseInt(args[1]);
 		THRESHOLD = DIMENSION; // Integer.parseInt(args[2]);
 		TRIALS = 1000;
 		

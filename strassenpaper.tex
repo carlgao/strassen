@@ -87,8 +87,7 @@ We recorded only the computational time of each trial of the algorithm, not the 
 The way we determined the threshold at which we should switch to the conventional algorithm is thus: for a given $n$, set both dimension and threshold equal to $n$ such that Strassen's runs exactly once on the topmost level, and the conventional algorithm takes care of the rest. Then compare this with running the conventional algorithm on the topmost level. This way we isolate the timing of that one level, like we did in the analytical estimate earlier. 
 
 \section {Difficulties}
-Some difficulties we encountered involved repeated memory allocation and dellocation, which we solved by allocating the temp arrays and the P arrays once in the beginning and storing them. Another difficulty was that the runtime of Strassen's algorithm depended on the number of trials we ran, which we suspected had to do with the program 'warming up', and combated by discarding the first several trials. 
-
+Some difficulties we encountered involved repeated memory allocation and dellocation, which we solved by allocating the temp arrays and the P arrays once in the beginning and storing them. Another difficulty was that the runtime of Strassen's algorithm depended on the number of trials we ran, which we suspected had to do with caching. For example, with dimension set to 8, trials 1-3148 ran in around 90000 ns and trials 3149-10000 in around 9000 ns. 
 
 
 \section {Conclusion}

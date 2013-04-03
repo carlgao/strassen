@@ -1,228 +1,333 @@
-import java.util.Random;
-import java.util.Scanner;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Scanner;
+
 
 public class strassen 
 {
-	public static final int THRESHOLD = 8;
-	
-	private static int[][] a, b, cnorm, cstr; // TODO what do the last two do? also, note to self: p_i order optimization
+	static int DIMENSION;
+	static int THRESHOLD;
+	static int TRIALS;
 
-	private static int d;
+	static HashMap<Integer, int[][]> P;
+	static HashMap<Integer, int[][]> T1;
+	static HashMap<Integer, int[][]> T2;
 
-	public static void main (String[] args)
+	public static void main(String[] args)
 	{
 		if (args.length != 3)
 		{
 			System.out.println("Usage: ./strassen 0 dimension inputfile");
 			return;
 		}
-		d = Integer.parseInt(args[1]);
-		int d2 = d + (d & 1);
+		DIMENSION = Integer.parseInt(args[1]);
+		THRESHOLD = 130;
 		
-		int[][] a = new int[d2][d2];
-		int[][] b = new int[d2][d2];
-		getArrays(args[2], a, b);
-		int[][] res = new int[d2][d2];
-		strassen(a, b, res, 0, 0, 0, 0, d2);
-		for (int i = 0; i < d; i++)
+		int[][] a = new int[DIMENSION][DIMENSION];
+		int[][] b = new int[DIMENSION][DIMENSION];
+		readMatrices(args[2], a, b);
+
+		initStrasMem();
+
+		int[][] c = new int[DIMENSION][DIMENSION];
+		strassen(a, b, c, DIMENSION);
+		
+		printDiag(c);
+	}
+	
+	/*
+	 * Initialize storage for all dimensions of Strassen's recursion.
+	 */
+	public static void initStrasMem()
+	{
+		P = new HashMap<Integer, int[][]>();
+		T1 = new HashMap<Integer, int[][]>();
+		T2 = new HashMap<Integer, int[][]>();
+
+		int size = DIMENSION;
+
+		while (size >= THRESHOLD)
 		{
-			for (int j = 0; j < d; j++)
+			size = (size + 1) >> 1;
+			//System.out.println("adding "+ size);
+			P.put(size, new int[size][size]);
+			T1.put(size, new int[size][size]);
+			T2.put(size, new int[size][size]);
+		}
+	}
+	
+	/*
+	 * m1 = A B             m2 = E F         res = (AE+BG)  (AF+BH)
+	 *      C D                  G H               (CE+DG)  (CF+DH)
+	 *      
+	 * Combinations:
+	 *    AE+BG = P5+P4-P2+P6
+	 *    AF+BH = P1+P2
+	 *    CE+DG = P3+P4
+	 *    CF+DH = P5+P1-P3-P7
+	 *    
+	 */
+	public static void strassen(int[][] m1, int[][] m2, int[][] res, int dim)
+	{
+		if (dim < THRESHOLD)
+			mult(m1, m2, res, dim);
+		
+		else
+		{
+			int dhalf = (dim+1) >> 1;
+			boolean odd = (dim & 1) == 1;
+		
+			int[][] t1 = T1.get(dhalf);
+			if (t1 == null)
 			{
-				System.out.print(res[i][j] + " ");
+				System.out.println(dhalf+ " fail");
+				System.exit(0);
 			}
-			System.out.println();
+			int[][] t2 = T2.get(dhalf);
+			int[][] p = P.get(dhalf);
+			
+			
+			// P1 = A(F-H) ===========================
+			// copy A into t1
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					t1[i][j] = m1[i][j];
+			// copy F into temp2
+			for (int i = 0; i < dhalf; i++)
+			{
+				for (int j = dhalf; j < dim; j++)
+					t2[i][j-dhalf] = m2[i][j];
+				if (odd)
+					t2[i][dhalf-1] = 0;
+			}
+			// decrement temp2 by H
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					t2[i-dhalf][j-dhalf] -= m2[i][j];	
+			
+			strassen(t1, t2, p, dhalf);
+			// update res with P1
+			for (int i = 0; i < dhalf; i++)
+				for (int j = dhalf; j < dim; j++)
+					res[i][j] = p[i][j-dhalf];
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					res[i][j] = p[i-dhalf][j-dhalf];
+			
+			
+			
+			// P2 = (A+B)H ===========================
+			
+			// A is already in t1
+			// Add B to t1
+			for (int i = 0; i < dhalf; i++)
+				for (int j = dhalf; j < dim; j++)
+					t1[i][j-dhalf] += m1[i][j];
+			// set temp2 to H 
+			// note if odd, rightmost column already padded
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					t2[i-dhalf][j-dhalf] = m2[i][j];
+			if (odd)
+			{
+				for (int j = dhalf; j < dim; j++)
+					t2[dhalf-1][j-dhalf] = 0;
+			}
+			
+			strassen(t1, t2, p, dhalf);
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					res[i][j] = -p[i][j];
+			for (int i = 0; i < dhalf; i++)
+				for (int j = dhalf; j < dim; j++)
+					res[i][j] += p[i][j-dhalf];
+			
+			
+			// P3 = (C+D)E ===========================
+			// copy C into t1
+			for (int i = dhalf; i < dim; i++)
+				for (int j = 0; j < dhalf; j++)
+					t1[i-dhalf][j] = m1[i][j];
+			if (odd)
+			{
+				for (int j = 0; j < dhalf; j++)
+					t1[dhalf-1][j] = 0;
+			}
+			// add D to t1
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					t1[i-dhalf][j-dhalf] += m1[i][j];
+			// copy E to t2
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					t2[i][j] = m2[i][j];
+			
+			strassen(t1, t2, p, dhalf);
+			// update result matrix with p3
+			for (int i = dhalf; i < dim; i++)
+				for (int j = 0; j < dhalf; j++)
+					res[i][j] = p[i-dhalf][j];
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					res[i][j] -= p[i-dhalf][j-dhalf];
+			
+			
+			
+			
+			// P4 = D(G-E) ===========================
+			// restore t1 to D
+			// note if odd, bottom row already padded
+			for (int i = dhalf; i < dim; i++)
+			{
+				for (int j = dhalf; j < dim; j++)
+					t1[i-dhalf][j-dhalf] = m1[i][j];
+				if (odd)
+					t1[i-dhalf][dhalf-1] = 0;
+			}
+			// set t2 to G-E. E is already in t2.
+			for (int i = dhalf; i < dim; i++)
+				for (int j = 0; j < dhalf; j++)
+					t2[i-dhalf][j] = m2[i][j] - t2[i-dhalf][j];
+			if (odd)
+			{
+				for (int j = 0; j < dhalf; j++)
+					t2[dhalf-1][j] *= -1;
+			}
+			
+			strassen(t1, t2, p, dhalf);
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					res[i][j] += p[i][j];
+			for (int i = dhalf; i < dim; i++)
+				for (int j = 0; j < dhalf; j++)
+					res[i][j] += p[i-dhalf][j];
+			
+			
+		
+			// P5 = (A+D)(E+H) =======================
+			// set t1 to (A+D) by adding A to t1 as t1 = D already
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					t1[i][j] += m1[i][j];
+			// set t2 to E
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					t2[i][j] = m2[i][j];
+			// add H to t2
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					t2[i-dhalf][j-dhalf] += m2[i][j];
+			
+			strassen(t1, t2, p, dhalf);
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					res[i][j] += p[i][j];
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					res[i][j] += p[i-dhalf][j-dhalf];
+			
+			
+			// P6 = (B-D)(G+H) =======================
+			// copy B into t1
+			for (int i = 0; i < dhalf; i++)
+			{
+				for (int j = dhalf; j < dim; j++)
+					t1[i][j-dhalf] = m1[i][j];
+				if (odd)
+					t1[i][dhalf-1] = 0;
+			}
+			// subtract D from t1
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					t1[i-dhalf][j-dhalf] -= m1[i][j];
+			// copy G into t2
+			for (int i = dhalf; i < dim; i++)
+				for (int j = 0; j < dhalf; j++)
+					t2[i-dhalf][j] = m2[i][j];
+			if (odd)
+			{
+				for (int j = 0; j < dhalf; j++)
+					t2[dhalf-1][j] = 0;
+			}
+			// add H to t2
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					t2[i-dhalf][j-dhalf] += m2[i][j];
+		
+			strassen(t1, t2, p, dhalf);
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					res[i][j] += p[i][j];
+			
+			// P7 = (A-C)(E+F) =======================
+			// copy A into t1
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					t1[i][j] = m1[i][j];
+			// subtract C from t1
+			for (int i = dhalf; i < dim; i++)
+				for (int j = 0; j < dhalf; j++)
+					t1[i-dhalf][j] -= m1[i][j];
+			// copy E into t2
+			for (int i = 0; i < dhalf; i++)
+				for (int j = 0; j < dhalf; j++)
+					t2[i][j] = m2[i][j];
+			// subtract F from t2
+			for (int i = 0; i < dhalf; i++)
+				for (int j = dhalf; j < dim; j++)
+					t2[i][j-dhalf] += m2[i][j];
+			
+			strassen(t1, t2, p, dhalf);
+			for (int i = dhalf; i < dim; i++)
+				for (int j = dhalf; j < dim; j++)
+					res[i][j] -= p[i-dhalf][j-dhalf];
+			
 		}
 	}
 
-	public static int[][] randMatrix(int dim, int min, int max)
+	public static void mult(int[][] m1, int[][] m2, int[][] res, int dim)
 	{
-		Random gen = new Random();
-		
-		int[][] mat = new int[dim][dim];
 		for (int i = 0; i < dim; i++)
-		{
-			for (int j = 0; j < dim; j++)
-			{
-				mat[i][j] = gen.nextInt(max-min+1)+min;
-			}
-		}
-		return mat;
+			for (int j = 0; j < dim; j++) 
+				res[i][j] = m1[i][0] * m2[0][j];		
+
+		for (int k = 1; k < dim; k++)
+			for (int i = 0; i < dim; i++)
+				for (int j = 0; j < dim; j++) {
+					res[i][j] += (m1[i][k] * m2[k][j]);		
+				}
 	}
 	
-	public static void getArrays(String filename, int[][] a, int[][] b) // why can't I access a and b without passing them in??
+	public static void readMatrices(String filename, int[][] a, int[][] b) 
 	{
-		Scanner sc = null;
-		try {
-			sc = new Scanner(new File(filename));
-		} catch (FileNotFoundException e) {
+		try 
+		{
+			Scanner sc = new Scanner(new File(filename));
+			
+			for (int i = 0; i < DIMENSION; i++)
+				for (int j = 0; j < DIMENSION; j++) 
+					a[i][j] = sc.nextInt();
+				
+			for (int i = 0; i < DIMENSION; i++)
+				for (int j = 0; j < DIMENSION; j++) 
+					b[i][j] = sc.nextInt();
+			
+			sc.close();
+		} 
+		catch (FileNotFoundException e) 
+		{
 			e.printStackTrace();
 			return;
 		}
-
-		// populate a
-		for (int i = 0; i < d; i++)
-			for (int j = 0; j < d; j++) {
-				a[i][j] = sc.nextInt();
-			}
-
-		// populate b
-		for (int i = 0; i < d; i++)
-			for (int j = 0; j < d; j++) {
-				b[i][j] = sc.nextInt();
-			}
-
-		sc.close();
 	}
 
-	// cache-efficient standard multiplication algorithm
-	public static void mult(int[][] m1, int[][] m2, int[][] res, int or1, int oc1, int or2, int oc2, int dim)
+	public static void printDiag(int[][] m)
 	{
-		System.out.println("dim: "+dim);
-		System.out.println(or1+" "+oc1+" "+or2+" "+oc2+" ");
-		for (int k = 0; k < dim; k++)
-			for (int i = 0; i < dim; i++)
-				for (int j = 0; j < dim; j++) {
-					res[i][j] = res[i][j] + (m1[i+or1][k+oc1] * m2[k+or2][j+oc2]);		
-				}
+		for (int i = 0; i < m.length; i++)
+			System.out.println(m[i][i]);
 	}
-
-
-	// nub memory usage dynamic padding style yay
-	// RIGHT NOW THIS DOES NOT WORK CRY
-	public static void strassen(int[][] m1, int[][] m2, int[][] res, int or1, int oc1, int or2, int oc2, int dim)
-	{
-		if (dim < THRESHOLD)
-			mult(m1, m2, res, or1, oc1, or2, oc2, dim);
-		else
-		{
-			int dm = (dim+1)>>1; // account for padding
-			int diff = dim - dm;
-
-
-			int[][] temp1 = new int[dm][dm];
-			int[][] temp2 = new int[dm][dm];
-
-
-			// P1 = A(F-H)
-			int[][] p1 = new int[dm][dm];		
-			// copy f-h into temp2
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					System.out.println("P1: "+"m2["+(i+or2)+","+(j+dm+oc2)+"]="+m2[i+or2][j+dm+oc2]+"  m2["+(i+dm+or2)+","+(j+dm+oc2)+"]="+m2[i+dm+or2][j+dm+oc2]);
-					temp2[i][j] = m2[i+or2][j+dm+oc2] - m2[i+dm+or2][j+dm+oc2];
-				}
-			}
-			strassen(m1, temp2, p1, or1, oc1, 0, 0, dm);
-			printMatrix(p1);
-
-			// P2 = (A+B)H
-			int[][] p2 = new int[dm][dm];		
-			// copy a+b into temp1
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					System.out.println("P2: "+"m1["+(i+or1)+","+(j+oc1)+"]="+m1[i+or1][j+oc1]+"  m1["+(i+or1)+","+(j+dm+oc1)+"]="+m1[i+or1][j+dm+oc1]);
-					temp1[i][j] = m1[i+or1][j+oc1] + m1[i+or1][j+dm+oc1];
-				}
-			}
-			strassen(temp1, m2, p2, 0, 0, or2 + dm, oc2 + dm, dm);
-			printMatrix(p2);
-
-
-			// P3 = (C+D)E
-			int[][] p3 = new int[dm][dm];		
-			// copy c+d into temp1
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					temp1[i][j] = m1[i+dm+or1][j+oc1] + m1[i+dm+or1][j+dm+oc1];
-				}
-			}
-			strassen(temp1, m2, p3, 0, 0, or2, oc2, dm);
-			printMatrix(p3);
-
-			// P4 = D(G-E)
-			int[][] p4 = new int[dm][dm];		
-			// copy g-e into temp2
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					temp2[i][j] = m2[i+dm+or2][j+oc2] - m2[i+or2][j+oc2];
-				}
-			}
-			strassen(m1, temp2, p4, or1+dm, oc1+dm, 0, 0, dm);
-			printMatrix(p4);
-
-			// P5 = (A+D)(E+H)
-			int[][] p5 = new int[dm][dm];
-			// copy a+d into temp1, e+h into temp2
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					temp1[i][j] = m1[i+or1][j+oc1] + m1[i+dm+or1][j+dm+oc1];
-					temp2[i][j] = m2[i+or2][j+oc2] + m2[i+dm+or2][j+dm+oc2];
-				}
-			}		
-			strassen(temp1, temp2, p5, 0, 0, 0, 0, dm);
-			printMatrix(p5);
-
-			// P6 = (B-D)(G+H)
-			int[][] p6 = new int[dm][dm];
-			// copy b-d into temp1, g+h into temp2
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					temp1[i][j] = m1[i+or1][j+dm+oc1] - m1[i+dm+or1][j+dm+oc1];
-					temp2[i][j] = m2[i+dm+or2][j+oc2] + m2[i+dm+or2][j+dm+oc2];
-				}
-			}		
-			strassen(temp1, temp2, p6, 0, 0, 0, 0, dm);
-			printMatrix(p6);
-
-			// P7
-			int[][] p7 = new int[dm][dm];
-			// copy a-c into temp1, e+f into temp2
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					temp1[i][j] = m1[i+or1][j+oc1] - m1[i+dm+or1][j+oc1];
-					temp2[i][j] = m2[i+or2][j+oc2] + m2[i+or2][j+dm+oc2];
-				}
-			}		
-			strassen(temp1, temp2, p7, 0, 0, 0, 0, dm);
-			printMatrix(p7);
-
-			// calculate result matrix
-			System.out.println("calculating result matrix");
-			for (int i = 0; i < diff; i++)
-			{
-				for (int j = 0; j < diff; j++)
-				{
-					System.out.println("1: "+(p5[i][j] + p4[i][j] - p2[i][j] +p6[i][j]));
-					res[i][j] = p5[i][j] + p4[i][j] - p2[i][j] +p6[i][j];
-					
-					System.out.println("2: "+(p1[i][j] + p2[i][j]));
-					res[i][j+dm] = p1[i][j] + p2[i][j];
-					
-					System.out.println("3: "+(p3[i][j] + p4[i][j]));
-					res[i+dm][j] = p3[i][j] + p4[i][j];
-					
-					System.out.println("4: "+(p5[i][j] + p1[i][j] - p3[i][j] -p7[i][j]));
-					res[i+dm][j+dm] = p5[i][j] + p1[i][j] - p3[i][j] - p7[i][j];
-				}
-			}
-			System.out.println("");
-		}
-	}
+	
 }
 
